@@ -1,5 +1,9 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/courses")
+@Tag(name = "Courses", description = "Course CRUD and search endpoints")
 public class TusupkaliMirasZhaugashNurzhanCourseController {
 
     private final TusupkaliMirasZhaugashNurzhanCourseService courseService;
@@ -29,18 +34,31 @@ public class TusupkaliMirasZhaugashNurzhanCourseController {
     }
 
     @GetMapping
+    @Operation(summary = "List courses", responses = {
+            @ApiResponse(responseCode = "200", description = "Courses returned")
+    })
     public ResponseEntity<List<TusupkaliMirasZhaugashNurzhanCourseResponseDto>> findAll(
-            @RequestParam(required = false) Long teacherId,
+            @Parameter(description = "Filter courses by teacher id") @RequestParam(required = false) Long teacherId,
+            @Parameter(description = "Search by course title, code, or description")
             @RequestParam(required = false) String search) {
         return ResponseEntity.ok(courseService.findAll(teacherId, search));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> findById(@PathVariable Long id) {
+    @Operation(summary = "Get a course by id", responses = {
+            @ApiResponse(responseCode = "200", description = "Course returned"),
+            @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> findById(
+            @Parameter(description = "Course id") @PathVariable Long id) {
         return ResponseEntity.ok(courseService.findById(id));
     }
 
     @PostMapping
+    @Operation(summary = "Create a course", responses = {
+            @ApiResponse(responseCode = "201", description = "Course created"),
+            @ApiResponse(responseCode = "400", description = "Validation failed")
+    })
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> create(
             @Valid @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
         TusupkaliMirasZhaugashNurzhanCourseResponseDto created = courseService.create(request);
@@ -48,14 +66,22 @@ public class TusupkaliMirasZhaugashNurzhanCourseController {
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Update a course", responses = {
+            @ApiResponse(responseCode = "200", description = "Course updated"),
+            @ApiResponse(responseCode = "404", description = "Course not found")
+    })
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> update(
-            @PathVariable Long id,
+            @Parameter(description = "Course id") @PathVariable Long id,
             @Valid @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
         return ResponseEntity.ok(courseService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @Operation(summary = "Delete a course", responses = {
+            @ApiResponse(responseCode = "204", description = "Course deleted"),
+            @ApiResponse(responseCode = "404", description = "Course not found")
+    })
+    public ResponseEntity<Void> delete(@Parameter(description = "Course id") @PathVariable Long id) {
         courseService.delete(id);
         return ResponseEntity.noContent().build();
     }

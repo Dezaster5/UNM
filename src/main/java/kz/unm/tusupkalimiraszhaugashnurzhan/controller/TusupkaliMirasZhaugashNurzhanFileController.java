@@ -1,5 +1,9 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.URI;
 import java.util.List;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto;
@@ -23,6 +27,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/files")
+@Tag(name = "Files", description = "File upload, metadata listing, download, and delete endpoints")
 public class TusupkaliMirasZhaugashNurzhanFileController {
 
     private final TusupkaliMirasZhaugashNurzhanFileStorageService fileStorageService;
@@ -33,11 +38,15 @@ public class TusupkaliMirasZhaugashNurzhanFileController {
     }
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Upload a file attachment", responses = {
+            @ApiResponse(responseCode = "201", description = "File uploaded"),
+            @ApiResponse(responseCode = "400", description = "Invalid file")
+    })
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto> upload(
             @RequestPart("file") MultipartFile file,
-            @RequestParam(required = false) Long studentId,
-            @RequestParam(required = false) Long teacherId,
-            @RequestParam(required = false) Long courseId,
+            @Parameter(description = "Attach file to student id") @RequestParam(required = false) Long studentId,
+            @Parameter(description = "Attach file to teacher id") @RequestParam(required = false) Long teacherId,
+            @Parameter(description = "Attach file to course id") @RequestParam(required = false) Long courseId,
             @AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails == null ? null : userDetails.getUsername();
         TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto uploaded = fileStorageService.upload(
@@ -51,15 +60,23 @@ public class TusupkaliMirasZhaugashNurzhanFileController {
     }
 
     @GetMapping
+    @Operation(summary = "List file metadata", responses = {
+            @ApiResponse(responseCode = "200", description = "File metadata returned")
+    })
     public ResponseEntity<List<TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto>> findAll(
-            @RequestParam(required = false) Long studentId,
-            @RequestParam(required = false) Long teacherId,
-            @RequestParam(required = false) Long courseId) {
+            @Parameter(description = "Filter files by student id") @RequestParam(required = false) Long studentId,
+            @Parameter(description = "Filter files by teacher id") @RequestParam(required = false) Long teacherId,
+            @Parameter(description = "Filter files by course id") @RequestParam(required = false) Long courseId) {
         return ResponseEntity.ok(fileStorageService.findAll(studentId, teacherId, courseId));
     }
 
     @GetMapping("/{id}/download")
-    public ResponseEntity<org.springframework.core.io.Resource> download(@PathVariable Long id) {
+    @Operation(summary = "Download a file", responses = {
+            @ApiResponse(responseCode = "200", description = "File downloaded"),
+            @ApiResponse(responseCode = "404", description = "File metadata not found")
+    })
+    public ResponseEntity<org.springframework.core.io.Resource> download(
+            @Parameter(description = "File attachment id") @PathVariable Long id) {
         TusupkaliMirasZhaugashNurzhanFileDownloadDto download = fileStorageService.download(id);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(download.contentType()))
@@ -72,7 +89,11 @@ public class TusupkaliMirasZhaugashNurzhanFileController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @Operation(summary = "Delete a file", responses = {
+            @ApiResponse(responseCode = "204", description = "File deleted"),
+            @ApiResponse(responseCode = "404", description = "File metadata not found")
+    })
+    public ResponseEntity<Void> delete(@Parameter(description = "File attachment id") @PathVariable Long id) {
         fileStorageService.delete(id);
         return ResponseEntity.noContent().build();
     }

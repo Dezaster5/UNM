@@ -21,6 +21,7 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNur
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanStudentRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanTeacherRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
+import kz.unm.tusupkalimiraszhaugashnurzhan.service.async.TusupkaliMirasZhaugashNurzhanAsyncFileProcessingService;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
     private final TusupkaliMirasZhaugashNurzhanTeacherRepository teacherRepository;
     private final TusupkaliMirasZhaugashNurzhanCourseRepository courseRepository;
     private final TusupkaliMirasZhaugashNurzhanFileAttachmentMapper fileAttachmentMapper;
+    private final TusupkaliMirasZhaugashNurzhanAsyncFileProcessingService asyncFileProcessingService;
 
     public TusupkaliMirasZhaugashNurzhanFileStorageService(
             TusupkaliMirasZhaugashNurzhanFileStorageProperties fileStorageProperties,
@@ -48,7 +50,8 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
             TusupkaliMirasZhaugashNurzhanStudentRepository studentRepository,
             TusupkaliMirasZhaugashNurzhanTeacherRepository teacherRepository,
             TusupkaliMirasZhaugashNurzhanCourseRepository courseRepository,
-            TusupkaliMirasZhaugashNurzhanFileAttachmentMapper fileAttachmentMapper) {
+            TusupkaliMirasZhaugashNurzhanFileAttachmentMapper fileAttachmentMapper,
+            TusupkaliMirasZhaugashNurzhanAsyncFileProcessingService asyncFileProcessingService) {
         this.uploadPath = Paths.get(fileStorageProperties.getUploadDir()).toAbsolutePath().normalize();
         this.maxSizeBytes = fileStorageProperties.getMaxSizeBytes();
         this.allowedContentTypes = fileStorageProperties.getAllowedContentTypes();
@@ -58,6 +61,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
         this.teacherRepository = teacherRepository;
         this.courseRepository = courseRepository;
         this.fileAttachmentMapper = fileAttachmentMapper;
+        this.asyncFileProcessingService = asyncFileProcessingService;
         createUploadDirectory();
     }
 
@@ -85,7 +89,10 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
         TusupkaliMirasZhaugashNurzhanFileAttachment attachment =
                 buildAttachment(file, originalFileName, storedFileName, studentId, teacherId, courseId,
                         uploadedByUsername);
-        return fileAttachmentMapper.toResponse(fileAttachmentRepository.save(attachment));
+        TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto response =
+                fileAttachmentMapper.toResponse(fileAttachmentRepository.save(attachment));
+        asyncFileProcessingService.processUploadedFile(response);
+        return response;
     }
 
     @Transactional(readOnly = true)

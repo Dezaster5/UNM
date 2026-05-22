@@ -12,6 +12,7 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.mapper.TusupkaliMirasZhaugashNurzhan
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanRoleRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.security.TusupkaliMirasZhaugashNurzhanJwtUtil;
+import kz.unm.tusupkalimiraszhaugashnurzhan.service.async.TusupkaliMirasZhaugashNurzhanAsyncNotificationService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,18 +25,21 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
     private final PasswordEncoder passwordEncoder;
     private final TusupkaliMirasZhaugashNurzhanUserMapper userMapper;
     private final TusupkaliMirasZhaugashNurzhanJwtUtil jwtUtil;
+    private final TusupkaliMirasZhaugashNurzhanAsyncNotificationService asyncNotificationService;
 
     public TusupkaliMirasZhaugashNurzhanAuthService(
             TusupkaliMirasZhaugashNurzhanUserRepository userRepository,
             TusupkaliMirasZhaugashNurzhanRoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
             TusupkaliMirasZhaugashNurzhanUserMapper userMapper,
-            TusupkaliMirasZhaugashNurzhanJwtUtil jwtUtil) {
+            TusupkaliMirasZhaugashNurzhanJwtUtil jwtUtil,
+            TusupkaliMirasZhaugashNurzhanAsyncNotificationService asyncNotificationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.jwtUtil = jwtUtil;
+        this.asyncNotificationService = asyncNotificationService;
     }
 
     @Transactional
@@ -56,7 +60,9 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(resolveRole(request.role()));
         user.setEnabled(true);
-        return userMapper.toResponse(userRepository.save(user));
+        TusupkaliMirasZhaugashNurzhanUserResponseDto response = userMapper.toResponse(userRepository.save(user));
+        asyncNotificationService.sendRegistrationNotification(response);
+        return response;
     }
 
     @Transactional(readOnly = true)

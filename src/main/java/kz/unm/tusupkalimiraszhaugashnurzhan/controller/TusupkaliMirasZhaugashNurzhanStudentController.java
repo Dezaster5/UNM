@@ -1,7 +1,7 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
 import java.net.URI;
-import java.util.List;
+import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanPageResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanStudentRequestDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanStudentResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.service.TusupkaliMirasZhaugashNurzhanStudentService;
@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -27,8 +28,24 @@ public class TusupkaliMirasZhaugashNurzhanStudentController {
     }
 
     @GetMapping
-    public ResponseEntity<List<TusupkaliMirasZhaugashNurzhanStudentResponseDto>> findAll() {
-        return ResponseEntity.ok(studentService.findAll());
+    public ResponseEntity<TusupkaliMirasZhaugashNurzhanPageResponseDto<
+            TusupkaliMirasZhaugashNurzhanStudentResponseDto>> findAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "lastName") String sortBy,
+            @RequestParam(defaultValue = "asc") String direction,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long departmentId,
+            @RequestParam(required = false) Long courseId) {
+        return ResponseEntity.ok(studentService.findAll(
+                page,
+                size,
+                sortBy,
+                direction,
+                search,
+                departmentId,
+                courseId
+        ));
     }
 
     @GetMapping("/{id}")

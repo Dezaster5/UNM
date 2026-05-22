@@ -1,7 +1,11 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.service;
 
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanPageResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanStudentRequestDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanStudentResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.entity.TusupkaliMirasZhaugashNurzhanDepartment;
@@ -11,8 +15,14 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.mapper.TusupkaliMirasZhaugashNurzhan
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanDepartmentRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanStudentRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 public class TusupkaliMirasZhaugashNurzhanStudentService {
@@ -34,10 +44,28 @@ public class TusupkaliMirasZhaugashNurzhanStudentService {
     }
 
     @Transactional(readOnly = true)
-    public List<TusupkaliMirasZhaugashNurzhanStudentResponseDto> findAll() {
-        return studentRepository.findAll().stream()
-                .map(studentMapper::toResponse)
-                .toList();
+    public TusupkaliMirasZhaugashNurzhanPageResponseDto<TusupkaliMirasZhaugashNurzhanStudentResponseDto> findAll(
+            int page,
+            int size,
+            String sortBy,
+            String direction,
+            String search,
+            Long departmentId,
+            Long courseId) {
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(sortDirection, sortBy));
+        Page<TusupkaliMirasZhaugashNurzhanStudentResponseDto> studentPage = studentRepository
+                .findAll(buildSpecification(search, departmentId, courseId), pageable)
+                .map(studentMapper::toResponse);
+
+        return new TusupkaliMirasZhaugashNurzhanPageResponseDto<>(
+                studentPage.getContent(),
+                studentPage.getNumber(),
+                studentPage.getSize(),
+                studentPage.getTotalElements(),
+                studentPage.getTotalPages(),
+                studentPage.isLast()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -100,5 +128,34 @@ public class TusupkaliMirasZhaugashNurzhanStudentService {
                 .orElseThrow(() -> new NoSuchElementException("User not found with id: " + request.userId()));
         student.setDepartment(department);
         student.setUser(user);
+    }
+
+    private Specification<TusupkaliMirasZhaugashNurzhanStudent> buildSpecification(
+            String search,
+            Long departmentId,
+            Long courseId) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (StringUtils.hasText(search)) {
+                String likeValue = "%" + search.toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("firstName")), likeValue),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("lastName")), likeValue),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("email")), likeValue),
+                        criteriaBuilder.like(criteriaBuilder.lower(root.get("studentNumber")), likeValue)
+                ));
+            }
+            if (departmentId != null) {
+                predicates.add(criteriaBuilder.equal(root.get("department").get("id"), departmentId));
+            }
+            if (courseId != null) {
+                query.distinct(true);
+                predicates.add(criteriaBuilder.equal(
+                        root.join("enrollments", JoinType.INNER).get("course").get("id"),
+                        courseId
+                ));
+            }
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
     }
 }

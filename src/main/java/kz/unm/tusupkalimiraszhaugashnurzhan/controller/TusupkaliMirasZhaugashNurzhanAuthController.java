@@ -2,6 +2,7 @@ package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
 import jakarta.validation.Valid;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanAuthRequestDto;
+import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanAuthResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanRegisterRequestDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanUserResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.service.TusupkaliMirasZhaugashNurzhanAuthService;
@@ -29,7 +30,7 @@ public class TusupkaliMirasZhaugashNurzhanAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TusupkaliMirasZhaugashNurzhanUserResponseDto> login(
+    public ResponseEntity<TusupkaliMirasZhaugashNurzhanAuthResponseDto> login(
             @Valid @RequestBody TusupkaliMirasZhaugashNurzhanAuthRequestDto request) {
         return ResponseEntity.ok(authService.login(request));
     }

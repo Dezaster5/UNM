@@ -1,6 +1,7 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.service;
 
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanAuthRequestDto;
+import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanAuthResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanRegisterRequestDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanUserResponseDto;
 import kz.unm.tusupkalimiraszhaugashnurzhan.entity.TusupkaliMirasZhaugashNurzhanRole;
@@ -10,6 +11,7 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.exception.TusupkaliMirasZhaugashNurz
 import kz.unm.tusupkalimiraszhaugashnurzhan.mapper.TusupkaliMirasZhaugashNurzhanUserMapper;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanRoleRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
+import kz.unm.tusupkalimiraszhaugashnurzhan.security.TusupkaliMirasZhaugashNurzhanJwtUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,16 +23,19 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
     private final TusupkaliMirasZhaugashNurzhanRoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final TusupkaliMirasZhaugashNurzhanUserMapper userMapper;
+    private final TusupkaliMirasZhaugashNurzhanJwtUtil jwtUtil;
 
     public TusupkaliMirasZhaugashNurzhanAuthService(
             TusupkaliMirasZhaugashNurzhanUserRepository userRepository,
             TusupkaliMirasZhaugashNurzhanRoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
-            TusupkaliMirasZhaugashNurzhanUserMapper userMapper) {
+            TusupkaliMirasZhaugashNurzhanUserMapper userMapper,
+            TusupkaliMirasZhaugashNurzhanJwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
+        this.jwtUtil = jwtUtil;
     }
 
     @Transactional
@@ -55,7 +60,7 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
     }
 
     @Transactional(readOnly = true)
-    public TusupkaliMirasZhaugashNurzhanUserResponseDto login(
+    public TusupkaliMirasZhaugashNurzhanAuthResponseDto login(
             TusupkaliMirasZhaugashNurzhanAuthRequestDto request) {
         TusupkaliMirasZhaugashNurzhanUser user = userRepository.findByUsername(request.usernameOrEmail())
                 .or(() -> userRepository.findByEmail(request.usernameOrEmail()))
@@ -63,7 +68,14 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
             throw new TusupkaliMirasZhaugashNurzhanBadRequestException("Invalid credentials");
         }
-        return userMapper.toResponse(user);
+        String token = jwtUtil.generateToken(user);
+        return new TusupkaliMirasZhaugashNurzhanAuthResponseDto(
+                token,
+                "Bearer",
+                jwtUtil.getJwtExpiration(),
+                user.getUsername(),
+                user.getRole().getName().name()
+        );
     }
 
     private TusupkaliMirasZhaugashNurzhanRole resolveRole(TusupkaliMirasZhaugashNurzhanRoleName requestedRole) {

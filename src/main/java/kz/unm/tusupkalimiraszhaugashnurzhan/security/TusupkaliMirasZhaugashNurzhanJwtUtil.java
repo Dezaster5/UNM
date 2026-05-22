@@ -71,7 +71,7 @@ public class TusupkaliMirasZhaugashNurzhanJwtUtil {
         byte[] keyBytes;
         try {
             keyBytes = Decoders.BASE64.decode(jwtSecret);
-        } catch (IllegalArgumentException exception) {
+        } catch (RuntimeException exception) {
             keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);
         }
         return Keys.hmacShaKeyFor(keyBytes);

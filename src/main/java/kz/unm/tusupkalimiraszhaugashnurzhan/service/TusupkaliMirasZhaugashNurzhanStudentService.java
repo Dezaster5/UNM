@@ -15,6 +15,8 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.mapper.TusupkaliMirasZhaugashNurzhan
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanDepartmentRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanStudentRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +28,8 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class TusupkaliMirasZhaugashNurzhanStudentService {
+
+    private static final Logger log = LoggerFactory.getLogger(TusupkaliMirasZhaugashNurzhanStudentService.class);
 
     private final TusupkaliMirasZhaugashNurzhanStudentRepository studentRepository;
     private final TusupkaliMirasZhaugashNurzhanDepartmentRepository departmentRepository;
@@ -52,6 +56,14 @@ public class TusupkaliMirasZhaugashNurzhanStudentService {
             String search,
             Long departmentId,
             Long courseId) {
+        log.info("Listing students page={} size={} sortBy={} direction={} search={} departmentId={} courseId={}",
+                page,
+                size,
+                sortBy,
+                direction,
+                search,
+                departmentId,
+                courseId);
         Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(size, 1), Sort.by(sortDirection, sortBy));
         Page<TusupkaliMirasZhaugashNurzhanStudentResponseDto> studentPage = studentRepository
@@ -84,7 +96,10 @@ public class TusupkaliMirasZhaugashNurzhanStudentService {
         }
         TusupkaliMirasZhaugashNurzhanStudent student = studentMapper.toEntity(request);
         assignRelations(student, request);
-        return studentMapper.toResponse(studentRepository.save(student));
+        TusupkaliMirasZhaugashNurzhanStudentResponseDto response =
+                studentMapper.toResponse(studentRepository.save(student));
+        log.info("Student created id={} studentNumber={}", response.id(), response.studentNumber());
+        return response;
     }
 
     @Transactional
@@ -99,13 +114,17 @@ public class TusupkaliMirasZhaugashNurzhanStudentService {
                 });
         studentMapper.updateEntity(student, request);
         assignRelations(student, request);
-        return studentMapper.toResponse(studentRepository.save(student));
+        TusupkaliMirasZhaugashNurzhanStudentResponseDto response =
+                studentMapper.toResponse(studentRepository.save(student));
+        log.info("Student updated id={} studentNumber={}", response.id(), response.studentNumber());
+        return response;
     }
 
     @Transactional
     public void delete(Long id) {
         TusupkaliMirasZhaugashNurzhanStudent student = getStudentEntity(id);
         studentRepository.delete(student);
+        log.info("Student deleted id={} studentNumber={}", id, student.getStudentNumber());
     }
 
     @Transactional(readOnly = true)

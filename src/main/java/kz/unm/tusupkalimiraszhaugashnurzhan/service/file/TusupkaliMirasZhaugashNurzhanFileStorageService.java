@@ -22,6 +22,8 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNur
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanTeacherRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.service.async.TusupkaliMirasZhaugashNurzhanAsyncFileProcessingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class TusupkaliMirasZhaugashNurzhanFileStorageService {
+
+    private static final Logger log = LoggerFactory.getLogger(
+            TusupkaliMirasZhaugashNurzhanFileStorageService.class);
 
     private final Path uploadPath;
     private final long maxSizeBytes;
@@ -74,6 +79,11 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
             String uploadedByUsername) {
         validateFile(file);
         String originalFileName = cleanOriginalFileName(file);
+        log.info("File upload started originalFileName={} contentType={} size={} uploadedBy={}",
+                originalFileName,
+                file.getContentType(),
+                file.getSize(),
+                uploadedByUsername);
         String storedFileName = UUID.randomUUID() + extractExtension(originalFileName);
         Path destination = uploadPath.resolve(storedFileName).normalize();
 
@@ -92,6 +102,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
         TusupkaliMirasZhaugashNurzhanFileAttachmentResponseDto response =
                 fileAttachmentMapper.toResponse(fileAttachmentRepository.save(attachment));
         asyncFileProcessingService.processUploadedFile(response);
+        log.info("File upload completed id={} storedFileName={}", response.id(), response.storedFileName());
         return response;
     }
 
@@ -100,6 +111,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
             Long studentId,
             Long teacherId,
             Long courseId) {
+        log.info("Listing files studentId={} teacherId={} courseId={}", studentId, teacherId, courseId);
         List<TusupkaliMirasZhaugashNurzhanFileAttachment> attachments;
         if (studentId != null) {
             attachments = fileAttachmentRepository.findByStudentId(studentId);
@@ -118,6 +130,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
     @Transactional(readOnly = true)
     public TusupkaliMirasZhaugashNurzhanFileDownloadDto download(Long id) {
         TusupkaliMirasZhaugashNurzhanFileAttachment attachment = findAttachment(id);
+        log.info("File download requested id={} storedFileName={}", id, attachment.getStoredFileName());
         Path filePath = uploadPath.resolve(attachment.getStoredFileName()).normalize();
         try {
             Resource resource = new UrlResource(filePath.toUri());
@@ -138,6 +151,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
     @Transactional
     public void delete(Long id) {
         TusupkaliMirasZhaugashNurzhanFileAttachment attachment = findAttachment(id);
+        log.info("File delete requested id={} storedFileName={}", id, attachment.getStoredFileName());
         Path filePath = uploadPath.resolve(attachment.getStoredFileName()).normalize();
         try {
             Files.deleteIfExists(filePath);
@@ -145,6 +159,7 @@ public class TusupkaliMirasZhaugashNurzhanFileStorageService {
             throw new TusupkaliMirasZhaugashNurzhanFileStorageException("Failed to delete file", exception);
         }
         fileAttachmentRepository.delete(attachment);
+        log.info("File delete completed id={}", id);
     }
 
     private void createUploadDirectory() {

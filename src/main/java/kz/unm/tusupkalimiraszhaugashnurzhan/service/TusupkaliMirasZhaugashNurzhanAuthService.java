@@ -13,12 +13,16 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNur
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanUserRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.security.TusupkaliMirasZhaugashNurzhanJwtUtil;
 import kz.unm.tusupkalimiraszhaugashnurzhan.service.async.TusupkaliMirasZhaugashNurzhanAsyncNotificationService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TusupkaliMirasZhaugashNurzhanAuthService {
+
+    private static final Logger log = LoggerFactory.getLogger(TusupkaliMirasZhaugashNurzhanAuthService.class);
 
     private final TusupkaliMirasZhaugashNurzhanUserRepository userRepository;
     private final TusupkaliMirasZhaugashNurzhanRoleRepository roleRepository;
@@ -45,6 +49,10 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
     @Transactional
     public TusupkaliMirasZhaugashNurzhanUserResponseDto register(
             TusupkaliMirasZhaugashNurzhanRegisterRequestDto request) {
+        log.info("Registration attempt username={} email={} role={}",
+                request.username(),
+                request.email(),
+                request.role());
         if (userRepository.existsByUsername(request.username())) {
             throw new TusupkaliMirasZhaugashNurzhanBadRequestException(
                     "Username already exists: " + request.username());
@@ -62,19 +70,23 @@ public class TusupkaliMirasZhaugashNurzhanAuthService {
         user.setEnabled(true);
         TusupkaliMirasZhaugashNurzhanUserResponseDto response = userMapper.toResponse(userRepository.save(user));
         asyncNotificationService.sendRegistrationNotification(response);
+        log.info("Registration completed username={} role={}", response.username(), response.role());
         return response;
     }
 
     @Transactional(readOnly = true)
     public TusupkaliMirasZhaugashNurzhanAuthResponseDto login(
             TusupkaliMirasZhaugashNurzhanAuthRequestDto request) {
+        log.info("Login attempt usernameOrEmail={}", request.usernameOrEmail());
         TusupkaliMirasZhaugashNurzhanUser user = userRepository.findByUsername(request.usernameOrEmail())
                 .or(() -> userRepository.findByEmail(request.usernameOrEmail()))
                 .orElseThrow(() -> new TusupkaliMirasZhaugashNurzhanBadRequestException("Invalid credentials"));
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
+            log.warn("Login failed usernameOrEmail={}", request.usernameOrEmail());
             throw new TusupkaliMirasZhaugashNurzhanBadRequestException("Invalid credentials");
         }
         String token = jwtUtil.generateToken(user);
+        log.info("Login succeeded username={} role={}", user.getUsername(), user.getRole().getName());
         return new TusupkaliMirasZhaugashNurzhanAuthResponseDto(
                 token,
                 "Bearer",

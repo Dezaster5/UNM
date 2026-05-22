@@ -11,6 +11,8 @@ import kz.unm.tusupkalimiraszhaugashnurzhan.entity.TusupkaliMirasZhaugashNurzhan
 import kz.unm.tusupkalimiraszhaugashnurzhan.mapper.TusupkaliMirasZhaugashNurzhanCourseMapper;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanCourseRepository;
 import kz.unm.tusupkalimiraszhaugashnurzhan.repository.TusupkaliMirasZhaugashNurzhanTeacherRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,8 @@ import org.springframework.util.StringUtils;
 
 @Service
 public class TusupkaliMirasZhaugashNurzhanCourseService {
+
+    private static final Logger log = LoggerFactory.getLogger(TusupkaliMirasZhaugashNurzhanCourseService.class);
 
     private final TusupkaliMirasZhaugashNurzhanCourseRepository courseRepository;
     private final TusupkaliMirasZhaugashNurzhanTeacherRepository teacherRepository;
@@ -34,6 +38,7 @@ public class TusupkaliMirasZhaugashNurzhanCourseService {
 
     @Transactional(readOnly = true)
     public List<TusupkaliMirasZhaugashNurzhanCourseResponseDto> findAll(Long teacherId, String search) {
+        log.info("Listing courses teacherId={} search={}", teacherId, search);
         return courseRepository.findAll(buildSpecification(teacherId, search)).stream()
                 .map(courseMapper::toResponse)
                 .toList();
@@ -52,7 +57,10 @@ public class TusupkaliMirasZhaugashNurzhanCourseService {
         }
         TusupkaliMirasZhaugashNurzhanCourse course = courseMapper.toEntity(request);
         assignTeacher(course, request.teacherId());
-        return courseMapper.toResponse(courseRepository.save(course));
+        TusupkaliMirasZhaugashNurzhanCourseResponseDto response =
+                courseMapper.toResponse(courseRepository.save(course));
+        log.info("Course created id={} code={}", response.id(), response.code());
+        return response;
     }
 
     @Transactional
@@ -67,12 +75,17 @@ public class TusupkaliMirasZhaugashNurzhanCourseService {
                 });
         courseMapper.updateEntity(course, request);
         assignTeacher(course, request.teacherId());
-        return courseMapper.toResponse(courseRepository.save(course));
+        TusupkaliMirasZhaugashNurzhanCourseResponseDto response =
+                courseMapper.toResponse(courseRepository.save(course));
+        log.info("Course updated id={} code={}", response.id(), response.code());
+        return response;
     }
 
     @Transactional
     public void delete(Long id) {
-        courseRepository.delete(getCourseEntity(id));
+        TusupkaliMirasZhaugashNurzhanCourse course = getCourseEntity(id);
+        courseRepository.delete(course);
+        log.info("Course deleted id={} code={}", id, course.getCode());
     }
 
     @Transactional(readOnly = true)

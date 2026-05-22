@@ -1,5 +1,6 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanCourseRequestDto;
@@ -41,7 +42,7 @@ public class TusupkaliMirasZhaugashNurzhanCourseController {
 
     @PostMapping
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> create(
-            @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
+            @Valid @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
         TusupkaliMirasZhaugashNurzhanCourseResponseDto created = courseService.create(request);
         return ResponseEntity.created(URI.create("/api/courses/" + created.id())).body(created);
     }
@@ -49,7 +50,7 @@ public class TusupkaliMirasZhaugashNurzhanCourseController {
     @PutMapping("/{id}")
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanCourseResponseDto> update(
             @PathVariable Long id,
-            @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
+            @Valid @RequestBody TusupkaliMirasZhaugashNurzhanCourseRequestDto request) {
         return ResponseEntity.ok(courseService.update(id, request));
     }
 

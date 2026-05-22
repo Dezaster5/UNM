@@ -1,5 +1,6 @@
 package kz.unm.tusupkalimiraszhaugashnurzhan.controller;
 
+import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
 import kz.unm.tusupkalimiraszhaugashnurzhan.dto.TusupkaliMirasZhaugashNurzhanDepartmentRequestDto;
@@ -38,7 +39,7 @@ public class TusupkaliMirasZhaugashNurzhanDepartmentController {
 
     @PostMapping
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanDepartmentResponseDto> create(
-            @RequestBody TusupkaliMirasZhaugashNurzhanDepartmentRequestDto request) {
+            @Valid @RequestBody TusupkaliMirasZhaugashNurzhanDepartmentRequestDto request) {
         TusupkaliMirasZhaugashNurzhanDepartmentResponseDto created = departmentService.create(request);
         return ResponseEntity.created(URI.create("/api/departments/" + created.id())).body(created);
     }
@@ -46,7 +47,7 @@ public class TusupkaliMirasZhaugashNurzhanDepartmentController {
     @PutMapping("/{id}")
     public ResponseEntity<TusupkaliMirasZhaugashNurzhanDepartmentResponseDto> update(
             @PathVariable Long id,
-            @RequestBody TusupkaliMirasZhaugashNurzhanDepartmentRequestDto request) {
+            @Valid @RequestBody TusupkaliMirasZhaugashNurzhanDepartmentRequestDto request) {
         return ResponseEntity.ok(departmentService.update(id, request));
     }
 
